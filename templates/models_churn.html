@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="stacked-forms">
+    <div class="card">
+        <h2>Churn Model Evaluation Metrics</h2>
+        <p style="color: var(--text-light); margin-bottom: 24px;">
+            Compare classification models for customer churn prediction
+        </p>
+
+        <!-- Model selection -->
+        <form method="get" action="{{ url_for('models_churn') }}" class="form-group">
+            <label for="model">Select Model</label>
+            <select name="model" id="model" onchange="this.form.submit()" required>
+                <option value="" disabled {% if not selected_model %}selected{% endif %}>
+                    Choose a model...
+                </option>
+                {% for model in models %}
+                <option value="{{ model }}" {% if model == selected_model %}selected{% endif %}>
+                    {{ model }}
+                </option>
+                {% endfor %}
+            </select>
+        </form>
+
+        {% if metrics and 'Error' not in metrics %}
+
+            {% set f1_score = metrics['F1-Score']|float %}
+            {% set accuracy = metrics.Accuracy|float %}
+
+            {% if accuracy >= 0.90 and f1_score >= 0.70 %}
+                {% set result_class = "" %}
+                {% set status = "Excellent Performance" %}
+                {% set status_color = "#166534" %}
+            {% elif accuracy >= 0.80 and f1_score >= 0.60 %}
+                {% set result_class = "warning" %}
+                {% set status = "Good Performance" %}
+                {% set status_color = "#92400e" %}
+            {% else %}
+                {% set result_class = "error" %}
+                {% set status = "Needs Improvement" %}
+                {% set status_color = "#991b1b" %}
+            {% endif %}
+
+            <div class="result {{ result_class }}">
+                <h3 style="color: {{ status_color }}; margin-bottom: 8px;">
+                    {{ selected_model }} — {{ status }}
+                </h3>
+
+                <!-- Main KPIs -->
+                <p style="margin: 4px 0 16px; color: {{ status_color }}; font-weight: 600;">
+                    F1-Score: {{ metrics['F1-Score'] }} |
+                    Accuracy: {{ metrics.Accuracy }}
+                </p>
+
+                <!-- Chart -->
+                <h4 style="margin: 24px 0 12px;">Performance Overview</h4>
+                <canvas id="churnMetricsChart" width="400" height="200"></canvas>
+
+                <!-- Metrics list -->
+                <h4 style="margin: 24px 0 12px;">Classification Metrics</h4>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong>Accuracy:</strong> {{ metrics.Accuracy }}</li>
+                    <li><strong>Precision:</strong> {{ metrics.Precision }}</li>
+                    <li><strong>Recall:</strong> {{ metrics.Recall }}</li>
+                    <li><strong>F1-Score:</strong> {{ metrics['F1-Score'] }}</li>
+                    <li><strong>ROC-AUC:</strong> {{ metrics['ROC-AUC'] }}</li>
+                </ul>
+
+                <!-- Interpretation -->
+                <h4 style="margin: 24px 0 12px;">Interpretation</h4>
+                <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px;">
+                    {% if accuracy >= 0.90 and f1_score >= 0.70 %}
+                        <p style="margin: 0; color: #166534;">
+                            ✅ <strong>Excellent model.</strong><br>
+                            High accuracy and strong balance between precision and recall.
+                            This model is reliable for churn prediction in production.
+                        </p>
+                    {% elif accuracy >= 0.80 and f1_score >= 0.60 %}
+                        <p style="margin: 0; color: #92400e;">
+                            ⚠️ <strong>Moderate model.</strong><br>
+                            Provides useful churn signals but may miss some churners or raise false alarms.
+                            Recommended to monitor and combine with business rules.
+                        </p>
+                    {% else %}
+                        <p style="margin: 0; color: #991b1b;">
+                            ❌ <strong>Weak model.</strong><br>
+                            Performance is insufficient for reliable churn prediction.
+                            Feature engineering or model redesign is required.
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Chart.js -->
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+            <script>
+                const churnMetrics = {
+                    'Accuracy': parseFloat("{{ metrics.Accuracy }}"),
+                    'Precision': parseFloat("{{ metrics.Precision }}"),
+                    'Recall': parseFloat("{{ metrics.Recall }}"),
+                    'F1-Score': parseFloat("{{ metrics['F1-Score'] }}"),
+                    'ROC-AUC': parseFloat("{{ metrics['ROC-AUC'] }}")
+                };
+
+                const ctx = document.getElementById('churnMetricsChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(churnMetrics),
+                        datasets: [{
+                            label: "{{ selected_model }}",
+                            data: Object.values(churnMetrics),
+                            backgroundColor: [
+                                'rgba(59, 130, 246, 0.8)',
+                                'rgba(16, 185, 129, 0.8)',
+                                'rgba(245, 158, 11, 0.8)',
+                                'rgba(139, 92, 246, 0.8)',
+                                'rgba(236, 72, 153, 0.8)'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 1,
+                                ticks: {
+                                    callback: value => (value * 100).toFixed(0) + '%'
+                                }
+                            }
+                        }
+                    }
+                });
+            </script>
+
+        {% elif metrics and 'Error' in metrics %}
+            <div class="result error">
+                <p><strong>Error:</strong> {{ metrics.Error }}</p>
+            </div>
+        {% else %}
+            <p style="text-align: center; color: var(--text-light); margin-top: 20px;">
+                Select a model to view its performance metrics.
+            </p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

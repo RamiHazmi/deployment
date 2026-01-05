@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="stacked-forms">
+
+    <!-- Activity Cluster Prediction -->
+    <div class="card" id="activity_cluster">
+        <h2>Customer Activity Cluster Prediction</h2>
+
+        <form method="post" action="{{ url_for('predict_activity_churn') }}">
+            <input type="hidden" name="form_type" value="activity_cluster">
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Total Flights</label>
+                    <input type="number" name="total_flights" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Total Distance</label>
+                    <input type="number" name="total_distance" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Average Delay (minutes)</label>
+                    <input type="number" name="avg_delay" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Flights per Month</label>
+                    <input type="number" step="0.1" name="flights_per_month" required>
+                </div>
+
+                <div class="form-group"></div>
+            </div>
+
+            <button type="submit">Predict Activity Cluster</button>
+        </form>
+
+        {% if activity_cluster is not none %}
+        <div class="result">
+            <h3>Predicted Activity Cluster: <strong>{{ activity_cluster }}</strong></h3>
+
+            {% if activity_cluster == 0 %}
+                <p>🧍 Low activity customers – occasional flyers.</p>
+            {% elif activity_cluster == 1 %}
+                <p>✈️ Medium activity customers – regular travelers.</p>
+            {% else %}
+                <p>🔥 High activity customers – very frequent flyers.</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Churn Prediction -->
+    <div class="card" id="churn">
+        <h2>Customer Churn Prediction</h2>
+
+        <form method="post" action="{{ url_for('predict_activity_churn') }}">
+            <input type="hidden" name="form_type" value="churn">
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Tenure (months)</label>
+                    <input type="number" name="tenure" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Monthly Charges</label>
+                    <input type="number" step="0.01" name="monthly_charges" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Total Charges</label>
+                    <input type="number" step="0.01" name="total_charges" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Contract Type</label>
+                    <select name="contract" required>
+                        <option value="" disabled selected>Select contract</option>
+                        <option value="Month-to-month">Month-to-month</option>
+                        <option value="One year">One year</option>
+                        <option value="Two year">Two year</option>
+                    </select>
+                </div>
+
+                <div class="form-group"></div>
+            </div>
+
+            <button type="submit">Predict Churn</button>
+        </form>
+
+        {% if churn is not none %}
+        <div class="result {% if churn == 1 %}error{% endif %}">
+            {% if churn == 1 %}
+                <h3>⚠️ Customer Likely to Churn</h3>
+            {% else %}
+                <h3>✅ Customer Likely to Stay</h3>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+{% if anchor %}
+<script>
+    // Scroll to the form that was submitted
+    const target = document.getElementById("{{ anchor }}");
+    if (target) {
+        target.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+    }
+</script>
+{% endif %}
+{% endblock %}

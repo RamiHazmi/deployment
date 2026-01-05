@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="stacked-forms">
+    <div class="card">
+        <h2>CLV Model Evaluation Metrics</h2>
+
+        <!-- Model selection -->
+        <form method="get" action="{{ url_for('models') }}" class="form-group">
+            <label for="model">Select Model</label>
+            <select name="model" id="model" onchange="this.form.submit()" required>
+                <option value="" disabled {% if not selected_model %}selected{% endif %}>
+                    Choose a model...
+                </option>
+                {% for model in models %}
+                <option value="{{ model }}" {% if model == selected_model %}selected{% endif %}>
+                    {{ model }}
+                </option>
+                {% endfor %}
+            </select>
+        </form>
+
+        {% if metrics %}
+            {% set test_r2 = metrics.Test.R2 %}
+            {% if test_r2 >= 0.7 %}
+                {% set result_class = "" %}
+                {% set status = "Strong Performance" %}
+                {% set status_color = "#166534" %}
+            {% elif test_r2 >= 0.4 %}
+                {% set result_class = "warning" %}
+                {% set status = "Moderate Performance" %}
+                {% set status_color = "#92400e" %}
+            {% else %}
+                {% set result_class = "error" %}
+                {% set status = "Poor Performance" %}
+                {% set status_color = "#991b1b" %}
+            {% endif %}
+
+            <div class="result {{ result_class }}">
+                <h3 style="color: {{ status_color }}; margin-bottom: 8px;">
+                    {{ selected_model }} — {{ status }}
+                </h3>
+                <p style="margin: 4px 0 16px; color: {{ status_color }}; font-weight: 600;">
+                    Test R²: {{ "%.4f"|format(test_r2) }}
+                </p>
+                <!-- Chart -->
+                <h4 style="margin: 24px 0 12px;">Performance Overview</h4>
+                <canvas id="metricsChart" width="400" height="200"></canvas>
+
+                <!-- Metric lists -->
+                <h4 style="margin: 24px 0 12px;">Train Set</h4>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong>R²:</strong> {{ "%.4f"|format(metrics.Train.R2) }}</li>
+                    <li><strong>RMSE:</strong> {{ "%.2f"|format(metrics.Train.RMSE) }}</li>
+                    <li><strong>MAE:</strong> {{ "%.2f"|format(metrics.Train.MAE) }}</li>
+                    <li><strong>Median AE:</strong> {{ "%.2f"|format(metrics.Train.MedianAE) }}</li>
+                    <li><strong>Explained Variance:</strong> {{ "%.4f"|format(metrics.Train.ExplainedVariance) }}</li>
+                </ul>
+
+                <h4 style="margin: 24px 0 12px;">Test Set</h4>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong>R²:</strong> {{ "%.4f"|format(metrics.Test.R2) }}</li>
+                    <li><strong>RMSE:</strong> {{ "%.2f"|format(metrics.Test.RMSE) }}</li>
+                    <li><strong>MAE:</strong> {{ "%.2f"|format(metrics.Test.MAE) }}</li>
+                    <li><strong>Median AE:</strong> {{ "%.2f"|format(metrics.Test.MedianAE) }}</li>
+                    <li><strong>Explained Variance:</strong> {{ "%.4f"|format(metrics.Test.ExplainedVariance) }}</li>
+                </ul>
+            </div>
+
+            <!-- Chart.js -->
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+            <!-- Your JS file -->
+            <script src="{{ url_for('static', filename='js/models_chart.js') }}"></script>
+
+            <!-- Pass Jinja variables to JS -->
+            <script>
+                const selectedModel = "{{ selected_model }}";
+                const modelMetrics = {{ metrics|tojson }};
+                renderMetricsChart(selectedModel, modelMetrics);
+            </script>
+
+        {% else %}
+            {% if selected_model %}
+            <div class="result error">
+                <p>No metrics available for the selected model.</p>
+            </div>
+            {% else %}
+            <p style="text-align: center; color: var(--text-light); margin-top: 20px;">
+                Select a model to view its performance metrics.
+            </p>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
