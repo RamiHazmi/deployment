@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Customer Feedback</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f8;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 600px;
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        textarea {
+            resize: vertical;
+            height: 120px;
+        }
+
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .info {
+            font-size: 14px;
+            color: #555;
+            margin-top: 10px;
+        }
+
+        .comment-card, .ticket-card {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: #f9f9f9;
+        }
+
+        .comment-card span, .ticket-card span {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Flight Feedback</h2>
+
+    <!-- Comment Form -->
+    <form method="POST" action="{{ url_for('comment') }}">
+        <label for="flight_id">Flight ID</label>
+        <input type="text" name="flight_id" id="flight_id" placeholder="e.g. AF203" required>
+
+        <label for="comment">Your Comment</label>
+        <textarea name="text" placeholder="Write your comment"></textarea>
+
+        <button type="submit">Submit Comment</button>
+    </form>
+
+    <p class="info">
+        Your feedback helps us improve flight operations and service quality.
+    </p>
+</div>
+
+<div class="container">
+    <h2>Upload Boarding Pass</h2>
+
+    <!-- Ticket Upload Form -->
+    <form method="POST" action="{{ url_for('upload_ticket') }}" enctype="multipart/form-data">
+        <label for="ticket_image">Select Image</label>
+        <input type="file" name="ticket_image" id="ticket_image" accept="image/*" required>
+        <button type="submit">Process Boarding Pass</button>
+    </form>
+
+   {% if ticket %}
+<div class="container">
+    <h2>🛫 Boarding Pass Info</h2>
+
+    <!-- Full-size uploaded image -->
+    <div style="margin-bottom: 20px;">
+        <img src="{{ ticket.image_url }}" alt="Boarding Pass" style="width:100%; border-radius:8px; border:1px solid #ccc;">
+    </div>
+
+    <!-- Extracted info below the image -->
+    <ul>
+        <li><strong>Airline:</strong> {{ ticket.Airline }}</li>
+        <li><strong>Flight:</strong> {{ ticket.Flight }}</li>
+        <li><strong>From:</strong> {{ ticket.From }}</li>
+        <li><strong>To:</strong> {{ ticket.To }}</li>
+        <li><strong>Date:</strong> {{ ticket.Date }}</li>
+        <li><strong>Time:</strong> {{ ticket.Time }}</li>
+        <li><strong>Day of Week:</strong> {{ ticket.DayOfWeek }}</li>
+
+    </ul>
+                <p>Delay Status: <strong>{{ ticket.DelayStatus }}</strong></p>
+
+</div>
+{% endif %}
+
+
+</div>
+
+
+
+
+</body>
+</html>
