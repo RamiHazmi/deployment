@@ -131,7 +131,190 @@
 
 
 </div>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0">🎤 Airline Voice Assistant</h2>
+                </div>
+                <div class="card-body text-center">
+                    <p class="lead">Press the microphone and speak</p>
+                    
+                    <button id="recordBtn" class="btn btn-primary btn-lg mb-3">
+                        🎤 Start Recording
+                    </button>
+                    
+                    <p id="status" class="text-muted"></p>
+                    
+                    <!-- Conversation area -->
+                    <div id="conversationBox" class="mt-4 text-left">
+                        <!-- Messages will appear here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
+<style>
+.message {
+    margin-bottom: 15px;
+    padding: 10px 15px;
+    border-radius: 10px;
+    max-width: 80%;
+}
+
+.user-message {
+    background-color: #e3f2fd;
+    margin-left: auto;
+    text-align: right;
+}
+
+.assistant-message {
+    background-color: #f5f5f5;
+    margin-right: auto;
+}
+
+.message-label {
+    font-weight: bold;
+    font-size: 0.85em;
+    margin-bottom: 5px;
+}
+
+.user-label {
+    color: #1976d2;
+}
+
+.assistant-label {
+    color: #388e3c;
+}
+</style>
+
+<script>
+let recorder, audioChunks = [];
+const recordBtn = document.getElementById("recordBtn");
+const status = document.getElementById("status");
+const conversationBox = document.getElementById("conversationBox");
+
+recordBtn.onclick = async () => {
+    if (!recorder) {
+        try {
+            // Démarrer l'enregistrement
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            recorder = new MediaRecorder(stream);
+            
+            audioChunks = [];
+            
+            recorder.ondataavailable = e => {
+                if (e.data.size > 0) {
+                    audioChunks.push(e.data);
+                }
+            };
+            
+            recorder.onstop = async () => {
+                await sendAudio();
+            };
+            
+            recorder.start();
+            status.textContent = "🎙️ Recording in progress... Speak now!";
+            recordBtn.textContent = "⏹️ Stop Recording";
+            recordBtn.classList.remove("btn-primary");
+            recordBtn.classList.add("btn-danger");
+            
+        } catch (error) {
+            console.error("Microphone error:", error);
+            status.textContent = "❌ Error: Unable to access microphone";
+        }
+    } else {
+        // Stop recording
+        recorder.stop();
+        recorder.stream.getTracks().forEach(track => track.stop());
+        status.textContent = "⌛ Processing...";
+        recordBtn.disabled = true;
+    }
+};
+
+async function sendAudio() {
+    try {
+        // Créer un blob audio
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        console.log("📦 Taille audio:", audioBlob.size, "bytes");
+        
+        // Préparer FormData
+        const formData = new FormData();
+        formData.append("voice_file", audioBlob, "recording.webm");
+        
+        // Envoyer au serveur
+        const response = await fetch("{{ url_for('voice_assistant') }}", {
+            method: "POST",
+            body: formData
+        });
+        
+        const data = await response.json();
+        console.log("📨 Réponse serveur:", data);
+        
+        if (data.success) {
+            // Afficher la transcription (ce que l'utilisateur a dit)
+            addMessage("user", data.transcription);
+            
+            // Afficher la réponse de l'assistant
+            addMessage("assistant", data.response);
+            
+            // 🔊 Jouer l'audio de la réponse si disponible
+            if (data.has_audio && data.audio_url) {
+                playAudioResponse(data.audio_url);
+            }
+            
+            status.textContent = "✅ Done!";
+        } else {
+            status.textContent = "❌ Error: " + (data.error || "Unknown error");
+        }
+        
+    } catch (error) {
+        console.error("Send error:", error);
+        status.textContent = "❌ Sending error: " + error.message;
+    } finally {
+        // Reset button
+        recorder = null;
+        recordBtn.disabled = false;
+        recordBtn.textContent = "🎤 Start Recording";
+        recordBtn.classList.remove("btn-danger");
+        recordBtn.classList.add("btn-primary");
+        
+        setTimeout(() => {
+            status.textContent = "";
+        }, 3000);
+    }
+}
+
+function playAudioResponse(audioUrl) {
+    const audio = new Audio(audioUrl);
+    audio.play().catch(error => {
+        console.error("Audio playback error:", error);
+    });
+}
+
+function addMessage(sender, text) {
+    const messageDiv = document.createElement("div");
+    messageDiv.className = `message ${sender}-message`;
+    
+    const label = document.createElement("div");
+    label.className = `message-label ${sender}-label`;
+    label.textContent = sender === "user" ? "You:" : "Assistant:";
+    
+    const content = document.createElement("div");
+    content.textContent = text;
+    
+    messageDiv.appendChild(label);
+    messageDiv.appendChild(content);
+    
+    conversationBox.appendChild(messageDiv);
+    
+    // Scroll to bottom
+    conversationBox.scrollTop = conversationBox.scrollHeight;
+}
+</script>
 
 
 

@@ -904,7 +904,7 @@ def voice_assistant():
             }), 500
     
     # GET : affichage initial
-    return render_template("voice_assistant.html")
+    return render_template("comment.html")
 
 
 @app.route("/voice/audio/<filename>")
