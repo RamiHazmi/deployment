@@ -1,2 +1,3 @@
 __pycache__/
 *.pyc
+services/mistral-7b-openorca.gguf2.Q4_0.gguf
